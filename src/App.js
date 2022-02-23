@@ -1,11 +1,15 @@
 import { useState, useEffect } from "react";
 import { resizeMe } from "./utils";
 import { STOCKS } from "./mocks";
+import { getProducts, createProduct, updateProduct, deleteProduct } from "./service/productService";
 
 function App() {
   const [img, setImg] = useState(null);
   const [imgCompressed, setImgCompressed] = useState(null);
-  const [produits, setProduits] = useState(STOCKS);
+  const [produits, setProduits] = useState([]);
+  const [refresh, setRefresh] = useState(0);
+  const [loading, setLoading] = useState(false);
+
 
 
   const [error] = useState("");
@@ -32,30 +36,58 @@ function App() {
     const data = new FormData(e.target);
     let nvProduit = Object.fromEntries(data.entries());
     nvProduit.produit = nvProduit.produit.charAt(0).toUpperCase() + nvProduit.produit.slice(1);
-    const existingProduct = produits.find(p => p.product === nvProduit.produit)
+    const existingProduct = produits.find(p => p.productName === nvProduit.produit)
     if (existingProduct) {
-      setProduits([...produits.filter(p => p.product !== nvProduit.produit), { product: nvProduit.produit, remainingQuantity: Number(existingProduct.remainingQuantity) + Number(nvProduit.quantite), unit: existingProduct.unit, comment: "", lastUpdateDate: new Date().toLocaleString("fr-FR") }]);
+      updateProduit({ id: existingProduct.id, remainingQuantity: Number(existingProduct.remainingQuantity) + Number(nvProduit.quantite), lastUpdateDate: new Date().toISOString() })
+      // setProduits([...produits.filter(p => p.productName !== nvProduit.produit), { productName: nvProduit.produit, remainingQuantity: Number(existingProduct.remainingQuantity) + Number(nvProduit.quantite), unit: existingProduct.unit, comment: "", lastUpdateDate: new Date().toLocaleString("fr-FR") }]);
     } else {
-      setProduits([...produits, { product: nvProduit.produit, remainingQuantity: nvProduit.quantite, unit: nvProduit.unite, comment: "", creationDate: new Date().toLocaleString("fr-FR") }]);
+      createProduct({
+        productName: nvProduit.produit,
+        remainingQuantity: Number(nvProduit.quantite),
+        unit: nvProduit.unite,
+      }).then(() => {
+        console.log("Product created successfully");
+        setRefresh(refresh + 1);
+      }).catch((err) => {
+        console.log(err);
+      })
+      // setProduits([...produits, { productName: nvProduit.produit, remainingQuantity: nvProduit.quantite, unit: nvProduit.unite, comment: "", creationDate: new Date().toLocaleString("fr-FR") }]);
     }
 
     document.querySelector("input[name='produit']").value = "";
   }
 
   const handleDelete = (produit) => {
-    setProduits(produits.filter(p => p.product !== produit));
+    deleteProduct(produit).then(() => {
+      console.log("produit supprimé avec succés");
+      setRefresh(refresh + 1);
+    }).catch((error) => {
+      console.log("une erreur s'est produite lors de la suppression");
+    })
   }
 
   const ajouter = (produit, quantite) => {
-    setProduits(produits.map(p => {
-      if (p.product === produit) {
-        return { ...p, remainingQuantity: p.remainingQuantity + quantite, lastUpdateDate: new Date().toLocaleString("fr-FR") }
-      } else {
-        return p;
-      }
-    }
-    ));
+    updateProduit({ id: produit.id, remainingQuantity: Number(produit.remainingQuantity) + Number(quantite), lastUpdateDate: new Date().toISOString() })
   }
+
+  const updateProduit = (produit) => {
+    updateProduct(produit)
+      .then(() => {
+        console.log('Product updated successfully');
+        setRefresh(refresh + 1);
+      })
+      .catch((error) => {
+        console.log('error occured while updating :', error)
+      });
+  }
+
+  useEffect(() => {
+    setLoading(true);
+    getProducts().then(async (res) => {
+      setProduits(await res.json());
+      setLoading(false);
+    }).catch((err) => console.log(err));
+  }, [refresh]);
 
   return (
     <div className="container">
@@ -67,7 +99,7 @@ function App() {
             <input name="produit" required className="form-control" list="listeProduits" id="exampleDataList" placeholder="Produit" autoComplete="off" />
             <datalist id="listeProduits">
               {produits.map(p =>
-                <option key={p.product} value={p.product} />)}
+                <option key={p.productName} value={p.productName} />)}
             </datalist>
 
 
@@ -93,40 +125,41 @@ function App() {
           <button type="submit" className="btn btn-primary">Ajouter</button>
         </div>
       </form>
-
       <div className="table-responsive">
         <table className="table">
           <thead>
             <tr>
-              <th scope="col">#</th>
-              <th scope="col">Date ajout</th>
-              <th scope="col">Date MàJ</th>
+              <th className="d-none d-md-table-cell" scope="col">#</th>
+              <th className="d-none d-md-table-cell" scope="col">Date ajout</th>
+              <th className="d-none d-md-table-cell" scope="col">Date MàJ</th>
               <th scope="col">Produit</th>
               <th scope="col">Quantité</th>
               <th scope="col">Action</th>
             </tr>
           </thead>
           <tbody>
-            {produits.map((p, index) => (<tr key={p.product}>
-              <th scope="row">{index}</th>
-              <td>{p.creationDate}</td>
-              <td>{p.lastUpdateDate}</td>
-              <td>{p.product}</td>
+            {produits.sort((p, q) => p.id - q.id).map((p, index) => (<tr key={p.id}>
+              <th className="d-none d-md-table-cell" scope="row">{p.id}{p.remainingQuantity === 0 && <span className="text-danger"><strong> (Epuisé)</strong></span>}</th>
+              <td className="d-none d-md-table-cell">{new Date(p.creationDate).toLocaleString()}</td>
+              <td className="d-none d-md-table-cell">{p.lastUpdateDate ? new Date(p.lastUpdateDate).toLocaleString() : '-'}</td>
+              <td>{p.productName}</td>
               <td>
                 <div className="input-group">
-                  <div className="col-sm-3">
+                  <div className="col-4">
                     <input type="text" disabled className="form-control" value={`${p.remainingQuantity} ${p.unit}`} />
                   </div>
-                  <button class="btn btn-outline-secondary" type="button" onClick={() => ajouter(p.product, 1)}>+</button>
-                  {p.remainingQuantity > 1 && <button class="btn btn-outline-secondary" type="button" onClick={() => ajouter(p.product, -1)}>-</button>}
+                  <button className="btn btn-primary" type="button" onClick={() => ajouter(p, 1)}>+</button>
+                  {p.remainingQuantity > 0 && <button className="btn btn-primary" type="button" onClick={() => ajouter(p, -1)}>-</button>}
                 </div>
 
               </td>
-              <td><a href="#" onClick={() => handleDelete(p.product)}>Supprimer</a></td>
+              <td><button type="button" onClick={() => handleDelete(p)} className="btn btn-danger">Supprimer</button></td>
             </tr>))}
           </tbody>
-          {produits.length === 0 && <p>Aucun produit dans la liste</p>}
         </table>
+        {loading && <div className="text-center"><div className="spinner-border" style={{ width: '3rem', height: '3rem' }} role="status">
+        </div></div>}
+        {!loading && produits.length === 0 && <p>Aucun produit dans la liste</p>}
       </div>
     </div>
   );
