@@ -90,78 +90,83 @@ function App() {
   }, [refresh]);
 
   return (
-    <div className="container">
-      <h1>Pantry manager</h1>
-      <form className="row row-cols-lg-auto g-3 align-items-center" onSubmit={handleSubmit}>
-        <div className="col-12">
-          <label className="visually-hidden" htmlFor="produit">Produit</label>
-          <div className="input-group">
-            <input name="produit" required className="form-control" list="listeProduits" id="exampleDataList" placeholder="Produit" autoComplete="off" />
-            <datalist id="listeProduits">
-              {produits.map(p =>
-                <option key={p.productName} value={p.productName} />)}
-            </datalist>
+    <>
+      <nav className="navbar navbar-dark bg-dark navbar-expand-lg navbar-light bg-light">
+        <a className="navbar-brand" href="/">Pantry manager
+        </a>
+      </nav>
+      <div className="container pt-3">
+        <form className="row row-cols-lg-auto g-3 align-items-center" onSubmit={handleSubmit}>
+          <div className="col-12">
+            <label className="visually-hidden" htmlFor="produit">Produit</label>
+            <div className="input-group">
+              <input name="produit" required className="form-control" list="listeProduits" id="exampleDataList" placeholder="Produit" autoComplete="off" />
+              <datalist id="listeProduits">
+                {produits.map(p =>
+                  <option key={p.productName} value={p.productName} />)}
+              </datalist>
 
 
+            </div>
           </div>
-        </div>
-        <div className="col-12">
-          <label className="visually-hidden" htmlFor="quantite">Quantité</label>
-          <select name="quantite" className="form-select" id="quantite" defaultValue={1}>
-            {[...Array(10).keys()].map(n => <option key={n + 1} value={n + 1}>{n + 1}</option>)}
-          </select>
-        </div>
+          <div className="col-12">
+            <label className="visually-hidden" htmlFor="quantite">Quantité</label>
+            <select name="quantite" className="form-select" id="quantite" defaultValue={1}>
+              {[...Array(10).keys()].map(n => <option key={n + 1} value={n + 1}>{n + 1}</option>)}
+            </select>
+          </div>
 
-        <div className="col-12">
-          <label className="visually-hidden" htmlFor="unite">Unité</label>
-          <select name="unite" className="form-select" id="unite" defaultValue={"boite"}>
-            <option value="boite">Boîte</option>
-            <option value="piece">Pièce</option>
-            <option value="kg">Kg</option>
-            <option value="litres">Litres</option>
-          </select>
-        </div>
-        <div className="col-12">
-          <button type="submit" className="btn btn-primary">Ajouter</button>
-        </div>
-      </form>
-      <div className="table-responsive">
-        <table className="table">
-          <thead>
-            <tr>
-              <th className="d-none d-md-table-cell" scope="col">#</th>
-              <th className="d-none d-md-table-cell" scope="col">Date ajout</th>
-              <th className="d-none d-md-table-cell" scope="col">Date MàJ</th>
-              <th scope="col">Produit</th>
-              <th scope="col">Quantité</th>
-              <th scope="col">Action</th>
-            </tr>
-          </thead>
-          <tbody>
-            {produits.sort((p, q) => p.id - q.id).map((p, index) => (<tr key={p.id}>
-              <th className="d-none d-md-table-cell" scope="row">{p.id}{p.remainingQuantity === 0 && <span className="text-danger"><strong> (Epuisé)</strong></span>}</th>
-              <td className="d-none d-md-table-cell">{new Date(p.creationDate).toLocaleString()}</td>
-              <td className="d-none d-md-table-cell">{p.lastUpdateDate ? new Date(p.lastUpdateDate).toLocaleString() : '-'}</td>
-              <td>{p.productName}</td>
-              <td>
-                <div className="input-group">
-                  <div className="col-4">
-                    <input type="text" disabled className="form-control" value={`${p.remainingQuantity} ${p.unit}`} />
+          <div className="col-12">
+            <label className="visually-hidden" htmlFor="unite">Unité</label>
+            <select name="unite" className="form-select" id="unite" defaultValue={"boite"}>
+              <option value="boite">Boîte</option>
+              <option value="piece">Pièce</option>
+              <option value="kg">Kg</option>
+              <option value="litres">Litres</option>
+            </select>
+          </div>
+          <div className="col-12">
+            <button type="submit" className="btn btn-primary">Ajouter</button>
+          </div>
+        </form>
+        <div className="table-responsive">
+          <table className="table">
+            <thead>
+              <tr>
+                <th className="d-none d-md-table-cell" scope="col">#</th>
+                <th className="d-none d-md-table-cell" scope="col">Date ajout</th>
+                <th className="d-none d-md-table-cell" scope="col">Date MàJ</th>
+                <th scope="col">Produit</th>
+                <th scope="col">Quantité</th>
+                <th scope="col">Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {produits.sort((p, q) => p.id - q.id).map((p, index) => (<tr key={p.id}>
+                <th className="d-none d-md-table-cell" scope="row">{p.id}</th>
+                <td style={{ wordWrap: 'break-word', minWidth: '1rem', maxWidth: '4rem' }} className="d-none d-md-table-cell">{new Date(p.creationDate).toLocaleString()}</td>
+                <td style={{ wordWrap: 'break-word', minWidth: '1rem', maxWidth: '4rem' }} className="d-none d-md-table-cell">{p.lastUpdateDate ? new Date(p.lastUpdateDate).toLocaleString() : '-'}</td>
+                <td style={{ wordWrap: 'break-word', minWidth: '1rem', maxWidth: '6rem' }}>{p.productName} {p.remainingQuantity === 0 && <span className="badge bg-danger">épuisé</span>}</td>
+                <td>
+                  <div className="input-group">
+                    <div className="col-7">
+                      <input type="text" disabled className="form-control" value={`${p.remainingQuantity} ${p.unit}`} />
+                    </div>
+                    <button className="btn btn-primary" type="button" onClick={() => ajouter(p, 1)}>+</button>
+                    {p.remainingQuantity > 0 && <button className="btn btn-primary" type="button" onClick={() => ajouter(p, -1)}>-</button>}
                   </div>
-                  <button className="btn btn-primary" type="button" onClick={() => ajouter(p, 1)}>+</button>
-                  {p.remainingQuantity > 0 && <button className="btn btn-primary" type="button" onClick={() => ajouter(p, -1)}>-</button>}
-                </div>
 
-              </td>
-              <td><button type="button" onClick={() => handleDelete(p)} className="btn btn-danger">Supprimer</button></td>
-            </tr>))}
-          </tbody>
-        </table>
-        {loading && <div className="text-center"><div className="spinner-border" style={{ width: '3rem', height: '3rem' }} role="status">
-        </div></div>}
-        {!loading && produits.length === 0 && <p>Aucun produit dans la liste</p>}
+                </td>
+                <td style={{ wordWrap: 'break-word', minWidth: '1rem', maxWidth: '1rem' }}><button type="button" onClick={() => handleDelete(p)} className="btn btn-danger">Suppr.</button></td>
+              </tr>))}
+            </tbody>
+          </table>
+          {loading && <div className="text-center"><div className="spinner-border" style={{ width: '3rem', height: '3rem' }} role="status">
+          </div></div>}
+          {!loading && produits.length === 0 && <p>Aucun produit dans la liste</p>}
+        </div>
       </div>
-    </div>
+    </>
   );
 }
 
