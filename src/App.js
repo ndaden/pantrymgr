@@ -1,34 +1,16 @@
 import { useState, useEffect } from "react";
-import { resizeMe } from "./utils";
-import { STOCKS } from "./mocks";
 import { getProducts, createProduct, updateProduct, deleteProduct } from "./service/productService";
+import { getReferentialValues } from "./service/referentialService";
+import Card from "./Card";
 
 function App() {
-  const [img, setImg] = useState(null);
-  const [imgCompressed, setImgCompressed] = useState(null);
   const [produits, setProduits] = useState([]);
+  const [units, setUnits] = useState([]);
   const [refresh, setRefresh] = useState(0);
   const [loading, setLoading] = useState(false);
+  const [showTable, setShowTable] = useState(false);
+  const [showCards, setShowCards] = useState(true);
 
-
-
-  const [error] = useState("");
-
-  const handleChange = e => {
-    const reader = new FileReader();
-    reader.readAsDataURL(e.target.files[0]);
-
-    reader.addEventListener("load", () => {
-      const uploaded_image = reader.result;
-      setImg({ data: uploaded_image, size: e.target.files[0].size });
-      setTimeout(() => {
-        let image = new Image();
-        image.src = uploaded_image;
-        const compressed_image = resizeMe(image);
-        setImgCompressed({ data: compressed_image, size: 0 });
-      }, 3000);
-    });
-  }
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -61,6 +43,7 @@ function App() {
     deleteProduct(produit).then(() => {
       console.log("produit supprimé avec succés");
       setRefresh(refresh + 1);
+      alert(`${produit.productName} a été supprimé`)
     }).catch((error) => {
       console.log("une erreur s'est produite lors de la suppression");
     })
@@ -82,6 +65,14 @@ function App() {
   }
 
   useEffect(() => {
+    getReferentialValues('QUANTITY_UNIT').then(async (result) => {
+      setUnits(await result.json());
+    }).catch((error) => {
+      console.log('an error occured while fetching referential values');
+    })
+  }, []);
+
+  useEffect(() => {
     setLoading(true);
     getProducts().then(async (res) => {
       setProduits(await res.json());
@@ -96,6 +87,7 @@ function App() {
         </a>
       </nav>
       <div className="container pt-3">
+        <button className="btn btn-link" onClick={() => setShowTable(!showTable)}>Mode: tableau</button>
         <form className="row row-cols-lg-auto g-3 align-items-center" onSubmit={handleSubmit}>
           <div className="col-12">
             <label className="visually-hidden" htmlFor="produit">Produit</label>
@@ -105,8 +97,6 @@ function App() {
                 {produits.map(p =>
                   <option key={p.productName} value={p.productName} />)}
               </datalist>
-
-
             </div>
           </div>
           <div className="col-12">
@@ -119,17 +109,14 @@ function App() {
           <div className="col-12">
             <label className="visually-hidden" htmlFor="unite">Unité</label>
             <select name="unite" className="form-select" id="unite" defaultValue={"boite"}>
-              <option value="boite">Boîte</option>
-              <option value="piece">Pièce</option>
-              <option value="kg">Kg</option>
-              <option value="litres">Litres</option>
+              {units.map(unit => <option key={unit.id} value={unit.referenceValue}>{unit.referenceValue}</option>)}
             </select>
           </div>
           <div className="col-12">
             <button type="submit" className="btn btn-primary">Ajouter</button>
           </div>
         </form>
-        <div className="table-responsive">
+        {showTable && <div className="table-responsive">
           <table className="table">
             <thead>
               <tr>
@@ -164,7 +151,18 @@ function App() {
           {loading && <div className="text-center"><div className="spinner-border" style={{ width: '3rem', height: '3rem' }} role="status">
           </div></div>}
           {!loading && produits.length === 0 && <p>Aucun produit dans la liste</p>}
-        </div>
+        </div>}
+        {showCards && <div className="row">
+          {produits.sort((p, q) => p.id - q.id).map((p, index) => (<div className="col-6 col-md-2">
+            <Card
+              productName={p.productName}
+              quantity={`${p.remainingQuantity} ${p.unit}`}
+              addOne={() => ajouter(p, 1)}
+              removeOne={() => ajouter(p, -1)}
+              deleteProduct={() => handleDelete(p)}
+            />
+          </div>))}
+        </div>}
       </div>
     </>
   );
