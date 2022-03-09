@@ -10,6 +10,7 @@ function App() {
   const [loading, setLoading] = useState(false);
   const [showTable, setShowTable] = useState(false);
   const [showCards, setShowCards] = useState(true);
+  const [search, setSearch] = useState("");
 
 
   const handleSubmit = (e) => {
@@ -64,6 +65,14 @@ function App() {
       });
   }
 
+  const searchProduct = (e) => {
+    if (e.target.value.length >= 3) {
+      setSearch(e.target.value);
+    } else {
+      setSearch("");
+    }
+  }
+
   useEffect(() => {
     getReferentialValues('QUANTITY_UNIT').then(async (result) => {
       setUnits(await result.json());
@@ -75,10 +84,13 @@ function App() {
   useEffect(() => {
     setLoading(true);
     getProducts().then(async (res) => {
-      setProduits(await res.json());
+      const result = [...await res.json()];
+      let filteredResult = result.filter(r => r.productName.toLowerCase().includes(search.toLowerCase()));
+      setProduits([...filteredResult.filter(r => r.remainingQuantity === 0), ...filteredResult.filter(r => r.remainingQuantity !== 0)]);
       setLoading(false);
+      window.scrollTo(0, 260);
     }).catch((err) => console.log(err));
-  }, [refresh]);
+  }, [refresh, search]);
 
   return (
     <>
@@ -116,6 +128,11 @@ function App() {
             <button type="submit" className="btn btn-primary">Ajouter</button>
           </div>
         </form>
+        <div className="mt-3 mb-3">
+          <div className="input-group">
+            <input name="search" className="form-control" id="search" placeholder="Rechercher un produit (saisir 3 caractères)" autoComplete="off" onChange={searchProduct} />
+          </div>
+        </div>
         {showTable && <div className="table-responsive">
           <table className="table">
             <thead>
@@ -153,8 +170,9 @@ function App() {
           {!loading && produits.length === 0 && <p>Aucun produit dans la liste</p>}
         </div>}
         {showCards && <div className="row">
-          {produits.sort((p, q) => p.id - q.id).map((p, index) => (<div className="col-6 col-md-2">
+          {produits.map((p, index) => (<div className="col-6 col-md-2">
             <Card
+              warning={p.remainingQuantity === 0}
               productName={p.productName}
               quantity={`${p.remainingQuantity} ${p.unit}`}
               addOne={() => ajouter(p, 1)}

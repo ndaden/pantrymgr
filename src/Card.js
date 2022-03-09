@@ -1,7 +1,7 @@
 import * as IconGi from 'react-icons/gi';
 import * as IconFa from 'react-icons/fa';
 
-function Card({ productName, quantity, addOne, removeOne, deleteProduct }) {
+function Card({ warning, productName, quantity, addOne, removeOne, deleteProduct }) {
     const getFontSize = (length) => {
         if (length >= 24) {
             return "11px";
@@ -29,7 +29,14 @@ function Card({ productName, quantity, addOne, removeOne, deleteProduct }) {
         return <IconGi.GiCardboardBox style={{ fontSize: "4rem" }} />;
     }
 
-    return (<div className="card text-white bg-dark bg-gradient" style={{ width: "9rem", height: "9rem", marginTop: "0.5rem", marginBottom: "0.5rem" }}>
+    const setCardBackground = () => {
+        if (warning) {
+            return 'bg-danger';
+        }
+        return 'bg-dark'
+    }
+
+    return (<div className={`card text-white ${setCardBackground()} bg-gradient`} style={{ width: "9rem", height: "9rem", marginTop: "0.5rem", marginBottom: "0.5rem" }}>
         <div className="card-body text-center p-1">
             <div className='float-end text-warning' onClick={deleteProduct}><IconFa.FaTrashAlt /></div>
             {getIcon(productName)}
